@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Petualangan Hidup Rukun - Kelas 2 SD</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            overflow: hidden;
+            background-color: #87CEEB;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* UI Overlay */
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .top-bar {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .score-panel, .quest-panel {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 25px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+            pointer-events: auto;
+        }
+
+        .score-panel {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .score-icon {
+            font-size: 20px;
+        }
+
+        .quest-panel {
+            background: rgba(255, 215, 0, 0.95);
+            color: #5a3e00;
+            max-width: 60%;
+            text-align: right;
+            font-size: 12px;
+        }
+
+        .bottom-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            pointer-events: none;
+        }
+
+        .joystick-container {
+            position: absolute;
+            bottom: 30px;
+            left: 20px;
+            width: 100px;
+            height: 100px;
+            pointer-events: auto;
+            z-index: 20;
+        }
+
+        .joystick-base {
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.4);
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.6);
+            position: relative;
+        }
+
+        .joystick-stick {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 50%;
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .action-buttons {
+            position: absolute;
+            bottom: 30px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: auto;
+            z-index: 20;
+        }
+
+        .action-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 100, 100, 0.9);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+            pointer-events: auto;
+        }
+
+        .action-btn:active {
+            transform: scale(0.9);
+        }
+
+        .btn-interact {
+            background: rgba(100, 200, 100, 0.9);
+        }
+
+        /* Modal Dialog */
+        .modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            pointer-events: auto;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            width: 85%;
+            max-width: 350px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            animation: popIn 0.3s ease;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-content h2 {
+            color: #4CAF50;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .modal-content p {
+            color: #555;
+            margin-bottom: 20px;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .modal-content .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4);
+        }
+
+        .modal-content .btn:active {
+            transform: scale(0.95);
+        }
+
+        .modal-icon {
+            font-size: 50px;
+            margin-bottom: 10px;
+        }
+
+        /* Intro Screen */
+        .intro-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .intro-screen h1 {
+            color: white;
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .intro-screen p {
+            color: rgba(255,255,255,0.9);
+            font-size: 14px;
+            margin-bottom: 30px;
+            max-width: 300px;
+            line-height: 1.6;
+        }
+
+        .intro-screen .start-btn {
+            background: #FFD700;
+            color: #5a3e00;
+            border: none;
+            padding: 15px 50px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+            transition: transform 0.2s;
+        }
+
+        .intro-screen .start-btn:active {
+            transform: scale(0.95);
+        }
+
+        .intro-emoji {
+            font-size: 60px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        /* Notification */
+        .notification {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(76, 175, 80, 0.95);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 50;
+            pointer-events: none;
+            text-align: center;
+            max-width: 80%;
+        }
+
+        .notification.show {
+            opacity: 1;
+        }
+
+        .notification.warning {
+            background: rgba(255, 152, 0, 0.95);
+        }
+
+        /* Loading */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 16px;
+            z-index: 300;
+        }
+
+        /* Responsive */
+        @media (max-width: 380px) {
+            .intro-screen h1 { font-size: 22px; }
+            .joystick-container { width: 80px; height: 80px; }
+            .joystick-stick { width: 32px; height: 32px; top: 24px; left: 24px; }
+            .action-btn { width: 50px; height: 50px; font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Intro Screen -->
+    <div class="intro-screen" id="introScreen">
+        <div class="intro-emoji">🏘️</div>
+        <h1>Petualangan Hidup Rukun</h1>
+        <p>Jelajahi desa, temui warga, dan bantu mereka hidup rukun! Kumpulkan poin kebaikan sebanyak mungkin.</p>
+        <button class="start-btn" id="startBtn">🚀 Mulai Petualangan</button>
+    </div>
+
+    <div id="game-container" style="display:none;">
+        <div class="ui-overlay">
+            <div class="top-bar">
+                <div class="score-panel">
+                    <span class="score-icon">⭐</span>
+                    <span id="scoreDisplay">0</span>
+                </div>
+                <div class="quest-panel" id="questDisplay">
+                    Temui warga desa
+                </div>
+            </div>
+
+            <div class="notification" id="notification"></div>
+
+            <!-- Joystick -->
+            <div class="joystick-container" id="joystickContainer">
+                <div class="joystick-base">
+                    <div class="joystick-stick" id="joystickStick"></div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="action-btn btn-interact" id="interactBtn">🤝</button>
+                <button class="action-btn" id="helpBtn">❓</button>
+            </div>
+        </div>
+
+        <!-- Modal Dialog -->
+        <div class="modal" id="modal">
+            <div class="modal-content">
+                <div class="modal-icon" id="modalIcon">🤝</div>
+                <h2 id="modalTitle">Judul</h2>
+                <p id="modalText">Teks</p>
+                <button class="btn" id="modalBtn">Mengerti!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Three.js from CDN -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // ============================================
+        // GAME STATE & JSON STORAGE
+        // ============================================
+        const GameState = {
+            score: 0,
+            questIndex: 0,
+            completedQuests: [],
+            playerName: 'Pahlawan Rukun',
+            saveKey: 'hidupRukunSave_v1',
+
+            // Quests / Misi pembelajaran
+            quests: [
+                {
+                    id: 'q1',
+                    title: 'Sapa Pak Budi',
+                    description: 'Temui Pak Budi dan ucapkan salam!',
+                    target: 'pakBudi',
+                    reward: 10,
+                    icon: '👋',
+                    dialog: 'Halo anak baik! Senang sekali kamu menyapa. Hidup rukun dimulai dari salam yang hangat.',
+                    hint: 'Cari Pak Budi di dekat rumah biru'
+                },
+                {
+                    id: 'q2',
+                    title: 'Bantu Bu Sari',
+                    description: 'Bantu Bu Sari membawa belanjaan.',
+                    target: 'buSari',
+                    reward: 15,
+                    icon: '🛒',
+                    dialog: 'Terima kasih banyak! Kamu anak yang ringan tangan. Membantu tetangga adalah wujud hidup rukun.',
+                    hint: 'Bu Sari ada di pasar dekat pohon besar'
+                },
+                {
+                    id: 'q3',
+                    title: 'Bermain dengan Adi',
+                    description: 'Ajak Adi bermain bersama.',
+                    target: 'adi',
+                    reward: 15,
+                    icon: '⚽',
+                    dialog: 'Asyik! Aku senang bermain bersamamu. Tidak membeda-bedakan teman itu penting untuk hidup rukun.',
+                    hint: 'Adi sedang bermain di lapangan'
+                },
+                {
+                    id: 'q4',
+                    title: 'Tolong Dedi',
+                    description: 'Bantu Dedi yang terjatuh.',
+                    target: 'dedi',
+                    reward: 20,
+                    icon: '🤕',
+                    dialog: 'Terima kasih sudah menolongku! Saling tolong menolong membuat hidup lebih rukun dan bahagia.',
+                    hint: 'Dedi terjatuh di dekat jembatan'
+                },
+                {
+                    id: 'q5',
+                    title: 'Kerja Bakti',
+                    description: 'Ikut kerja bakti membersihkan desa.',
+                    target: 'kerjaBakti',
+                    reward: 25,
+                    icon: '🧹',
+                    dialog: 'Hebat! Kamu ikut kerja bakti. Gotong royong adalah budaya hidup rukun yang harus kita jaga.',
+                    hint: 'Kumpulkan warga di balai desa'
+                }
+            ],
+
+            // Load from localStorage
+            load() {
+                try {
+                    const saved = localStorage.getItem(this.saveKey);
+                    if (saved) {
+                        const data = JSON.parse(saved);
+                        this.score = data.score || 0;
+                        this.questIndex = data.questIndex || 0;
+                        this.completedQuests = data.completedQuests || [];
+                        this.playerName = data.playerName || 'Pahlawan Rukun';
+                    }
+                } catch (e) {
+                    console.warn('Gagal load save:', e);
+                }
+            },
+
+            // Save to localStorage as JSON
+            save() {
+                try {
+                    const data = {
+                        score: this.score,
+                        questIndex: this.questIndex,
+                        completedQuests: this.completedQuests,
+                        playerName: this.playerName,
+                        lastSaved: new Date().toISOString()
+                    };
+                    localStorage.setItem(this.saveKey, JSON.stringify(data));
+                } catch (e) {
+                    console.warn('Gagal save:', e);
+                }
+            },
+
+            reset() {
+                this.score = 0;
+                this.questIndex = 0;
+                this.completedQuests = [];
+                this.save();
+            },
+
+            completeQuest(questId, reward) {
+                if (!this.completedQuests.includes(questId)) {
+                    this.completedQuests.push(questId);
+                    this.score += reward;
+                    this.questIndex = Math.min(this.questIndex + 1, this.quests.length);
+                    this.save();
+                    return true;
+                }
+                return false;
+            },
+
+            getCurrentQuest() {
+                if (this.questIndex < this.quests.length) {
+                    return this.quests[this.questIndex];
+                }
+                return null;
+            },
+
+            isAllComplete() {
+                return this.questIndex >= this.quests.length;
+            }
+        };
+
+        // ============================================
+        // THREE.JS SCENE SETUP
+        // ============================================
+        let scene, camera, renderer;
+        let player, playerGroup;
+        let clock;
+        let npcs = [];
+        let buildings = [];
+        let trees = [];
+        let interactables = [];
+        let nearestInteractable = null;
+
+        // Player movement
+        const keys = { w: false, a: false, s: false, d: false };
+        const joystick = { active: false, x: 0, y: 0, originX: 0, originY: 0 };
+        const playerSpeed = 5;
+        const playerRadius = 0.5;
+
+        // Camera follow
+        const cameraOffset = new THREE.Vector3(0, 8, 8);
+        const cameraLookAt = new THREE.Vector3();
+
+        // ============================================
+        // INIT
+        // ============================================
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.Fog(0x87CEEB, 30, 60);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 10, 10);
+            camera.lookAt(0, 0, 0);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('game-container').appendChild(renderer.domElement);
+
+            clock = new THREE.Clock();
+
+            // Lights
+            setupLights();
+
+            // World
+            createGround();
+            createPaths();
+            createBuildings();
+            createTrees();
+            createDecorations();
+            createNPCs();
+            createPlayer();
+
+            // Load saved state
+            GameState.load();
+            updateUI();
+
+            // Events
+            setupEvents();
+
+            // Start animation
+            animate();
+        }
+
+        // ============================================
+        // LIGHTS
+        // ============================================
+        function setupLights() {
+            // Ambient
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+
+            // Sun
+            const sun = new THREE.DirectionalLight(0xfff5e6, 1.0);
+            sun.position.set(20, 30, 10);
+            sun.castShadow = true;
+            sun.shadow.mapSize.width = 2048;
+            sun.shadow.mapSize.height = 2048;
+            sun.shadow.camera.near = 0.5;
+            sun.shadow.camera.far = 80;
+            sun.shadow.camera.left = -40;
+            sun.shadow.camera.right = 40;
+            sun.shadow.camera.top = 40;
+            sun.shadow.camera.bottom = -40;
+            scene.add(sun);
+
+            // Hemisphere
+            const hemi = new THREE.HemisphereLight(0x87CEEB, 0x3a5f0b, 0.4);
+            scene.add(hemi);
+        }
+
+        // ============================================
+        // GROUND
+        // ============================================
+        function createGround() {
+            const groundGeo = new THREE.PlaneGeometry(80, 80);
+            const groundMat = new THREE.MeshLambertMaterial({ color: 0x7CB342 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // Grass patches
+            for (let i = 0; i < 60; i++) {
+                const patchGeo = new THREE.CircleGeometry(0.8 + Math.random() * 1.5, 6);
+                const patchMat = new THREE.MeshLambertMaterial({
+                    color: Math.random() > 0.5 ? 0x8BC34A : 0x689F38
+                });
+                const patch = new THREE.Mesh(patchGeo, patchMat);
+                patch.rotation.x = -Math.PI / 2;
+                patch.position.set(
+                    (Math.random() - 0.5) * 70,
+                    0.01,
+                    (Math.random() - 0.5) * 70
+                );
+                scene.add(patch);
+            }
+        }
+
+        // ============================================
+        // PATHS
+        // ============================================
+        function createPaths() {
+            const pathMat = new THREE.MeshLambertMaterial({ color: 0xD2B48C });
+
+            // Main horizontal path
+            const path1 = new THREE.Mesh(new THREE.PlaneGeometry(60, 3), pathMat);
+            path1.rotation.x = -Math.PI / 2;
+            path1.position.set(0, 0.02, 0);
+            path1.receiveShadow = true;
+            scene.add(path1);
+
+            // Vertical path
+            const path2 = new THREE.Mesh(new THREE.PlaneGeometry(3, 50), pathMat);
+            path2.rotation.x = -Math.PI / 2;
+            path2.position.set(0, 0.02, 0);
+            path2.receiveShadow = true;
+            scene.add(path2);
+
+            // Secondary paths
+            const path3 = new THREE.Mesh(new THREE.PlaneGeometry(20, 2.5), pathMat);
+            path3.rotation.x = -Math.PI / 2;
+            path3.position.set(-15, 0.02, -12);
+            path3.receiveShadow = true;
+            scene.add(path3);
+
+            const path4 = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 15), pathMat);
+            path4.rotation.x = -Math.PI / 2;
+            path4.position.set(15, 0.02, 12);
+            path4.receiveShadow = true;
+            scene.add(path4);
+        }
+
+        // ============================================
+        // BUILDINGS
+        // ============================================
+        function createBuildings() {
+            const buildingData = [
+                { x: -12, z: -8, w: 5, h: 4, d: 5, color: 0xE57373, roofColor: 0xB71C1C, name: 'Rumah Pak Budi' },
+                { x: 12, z: -8, w: 5, h: 4, d: 5, color: 0x64B5F6, roofColor: 0x0D47A1, name: 'Rumah Bu Sari' },
+                { x: -12, z: 10, w: 5, h: 4, d: 5, color: 0xFFB74D, roofColor: 0xE65100, name: 'Rumah Adi' },
+                { x: 12, z: 10, w: 5, h: 4, d: 5, color: 0x81C784, roofColor: 0x1B5E20, name: 'Rumah Dedi' },
+                { x: 0, z: -18, w: 8, h: 5, d: 6, color: 0xFFF176, roofColor: 0xF57F17, name: 'Balai Desa' },
+                { x: -20, z: 0, w: 6, h: 4, d: 6, color: 0xBA68C8, roofColor: 0x4A148C, name: 'Pasar' }
+            ];
+
+            buildingData.forEach(data => {
+                const group = new THREE.Group();
+
+                // Walls
+                const wallGeo = new THREE.BoxGeometry(data.w, data.h, data.d);
+                const wallMat = new THREE.MeshLambertMaterial({ color: data.color });
+                const walls = new THREE.Mesh(wallGeo, wallMat);
+                walls.position.y = data.h / 2;
+                walls.castShadow = true;
+                walls.receiveShadow = true;
+                group.add(walls);
+
+                // Roof (pyramid)
+                const roofGeo = new THREE.ConeGeometry(Math.max(data.w, data.d) * 0.75, 2.5, 4);
+                const roofMat = new THREE.MeshLambertMaterial({ color: data.roofColor });
+                const roof = new THREE.Mesh(roofGeo, roofMat);
+                roof.position.y = data.h + 1.25;
+                roof.rotation.y = Math.PI / 4;
+                roof.castShadow = true;
+                group.add(roof);
+
+                // Door
+                const doorGeo = new THREE.BoxGeometry(1, 1.8, 0.1);
+                const doorMat = new THREE.MeshLambertMaterial({ color: 0x5D4037 });
+                const door = new THREE.Mesh(doorGeo, doorMat);
+                door.position.set(0, 0.9, data.d / 2 + 0.05);
+                group.add(door);
+
+                // Windows
+                const winGeo = new THREE.BoxGeometry(0.8, 0.8, 0.1);
+                const winMat = new THREE.MeshLambertMaterial({ color: 0xB3E5FC, emissive: 0x4FC3F7, emissiveIntensity: 0.3 });
+                const win1 = new THREE.Mesh(winGeo, winMat);
+                win1.position.set(-1.2, 2.2, data.d / 2 + 0.05);
+                group.add(win1);
+                const win2 = new THREE.Mesh(winGeo, winMat);
+                win2.position.set(1.2, 2.2, data.d / 2 + 0.05);
+                group.add(win2);
+
+                group.position.set(data.x, 0, data.z);
+                group.userData = { name: data.name, type: 'building' };
+                scene.add(group);
+                buildings.push(group);
+            });
+        }
+
+        // ============================================
+        // TREES
+        // ============================================
+        function createTrees() {
+            const treePositions = [
+                { x: -5, z: -5 }, { x: 5, z: -5 }, { x: -5, z: 5 }, { x: 5, z: 5 },
+                { x: -18, z: -15 }, { x: 18, z: -15 }, { x: -18, z: 15 }, { x: 18, z: 15 },
+                { x: -25, z: 8 }, { x: 25, z: -8 }, { x: -8, z: -20 }, { x: 8, z: 20 },
+                { x: 20, z: 5 }, { x: -20, z: -5 }, { x: 0, z: 15 }, { x: 0, z: -12 },
+                { x: -15, z: 20 }, { x: 15, z: -20 }
+            ];
+
+            treePositions.forEach(pos => {
+                const tree = createTree();
+                tree.position.set(pos.x, 0, pos.z);
+                tree.scale.setScalar(0.8 + Math.random() * 0.4);
+                scene.add(tree);
+                trees.push(tree);
+            });
+        }
+
+        function createTree() {
+            const group = new THREE.Group();
+
+            // Trunk
+            const trunkGeo = new THREE.CylinderGeometry(0.3, 0.4, 2, 6);
+            const trunkMat = new THREE.MeshLambertMaterial({ color: 0x795548 });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 1;
+            trunk.castShadow = true;
+            group.add(trunk);
+
+            // Foliage (3 layers)
+            const leafMat = new THREE.MeshLambertMaterial({ color: 0x4CAF50 });
+            const leafMat2 = new THREE.MeshLambertMaterial({ color: 0x388E3C });
+
+            const leaf1 = new THREE.Mesh(new THREE.SphereGeometry(1.2, 8, 6), leafMat);
+            leaf1.position.y = 2.5;
+            leaf1.castShadow = true;
+            group.add(leaf1);
+
+            const leaf2 = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 6), leafMat2);
+            leaf2.position.set(0.5, 3.2, 0.3);
+            leaf2.castShadow = true;
+            group.add(leaf2);
+
+            const leaf3 = new THREE.Mesh(new THREE.SphereGeometry(0.9, 8, 6), leafMat);
+            leaf3.position.set(-0.4, 3.4, -0.3);
+            leaf3.castShadow = true;
+            group.add(leaf3);
+
+            return group;
+        }
+
+        // ============================================
+        // DECORATIONS (flowers, stones, fence)
+        // ============================================
+        function createDecorations() {
+            // Flowers
+            const flowerColors = [0xFF5252, 0xFFEB3B, 0xFF80AB, 0xE040FB, 0x40C4FF];
+            for (let i = 0; i < 40; i++) {
+                const group = new THREE.Group();
+                const stemGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.4, 4);
+                const stemMat = new THREE.MeshLambertMaterial({ color: 0x4CAF50 });
+                const stem = new THREE.Mesh(stemGeo, stemMat);
+                stem.position.y = 0.2;
+                group.add(stem);
+
+                const petalGeo = new THREE.SphereGeometry(0.15, 6, 4);
+                const petalMat = new THREE.MeshLambertMaterial({
+                    color: flowerColors[Math.floor(Math.random() * flowerColors.length)]
+                });
+                const petal = new THREE.Mesh(petalGeo, petalMat);
+                petal.position.y = 0.45;
+                group.add(petal);
+
+                group.position.set(
+                    (Math.random() - 0.5) * 70,
+                    0,
+                    (Math.random() - 0.5) * 70
+                );
+                scene.add(group);
+            }
+
+            // Stones
+            for (let i = 0; i < 20; i++) {
+                const stoneGeo = new THREE.DodecahedronGeometry(0.2 + Math.random() * 0.3);
+                const stoneMat = new THREE.MeshLambertMaterial({ color: 0x9E9E9E });
+                const stone = new THREE.Mesh(stoneGeo, stoneMat);
+                stone.position.set(
+                    (Math.random() - 0.5) * 70,
+                    0.15,
+                    (Math.random() - 0.5) * 70
+                );
+                stone.rotation.set(Math.random(), Math.random(), Math.random());
+                stone.castShadow = true;
+                scene.add(stone);
+            }
+        }
+
+        // ============================================
+        // NPCs
+        // ============================================
+        function createNPCs() {
+            const npcData = [
+                {
+                    id: 'pakBudi', name: 'Pak Budi', color: 0x2196F3,
+                    position: { x: -12, z: -3 }, emoji: '👨',
+                    dialog: 'Halo anak baik! Senang sekali kamu menyapa. Hidup rukun dimulai dari salam yang hangat.'
+                },
+                {
+                    id: 'buSari', name: 'Bu Sari', color: 0xE91E63,
+                    position: { x: -20, z: 5 }, emoji: '👩',
+                    dialog: 'Terima kasih banyak! Kamu anak yang ringan tangan. Membantu tetangga adalah wujud hidup rukun.'
+                },
+                {
+                    id: 'adi', name: 'Adi', color: 0xFF9800,
+                    position: { x: -12, z: 15 }, emoji: '👦',
+                    dialog: 'Asyik! Aku senang bermain bersamamu. Tidak membeda-bedakan teman itu penting untuk hidup rukun.'
+                },
+                {
+                    id: 'dedi', name: 'Dedi', color: 0x4CAF50,
+                    position: { x: 12, z: 15 }, emoji: '🧒',
+                    dialog: 'Terima kasih sudah menolongku! Saling tolong menolong membuat hidup lebih rukun dan bahagia.'
+                },
+                {
+                    id: 'kerjaBakti', name: 'Warga Desa', color: 0xFFD700,
+                    position: { x: 0, z: -22 }, emoji: '👥',
+                    dialog: 'Hebat! Kamu ikut kerja bakti. Gotong royong adalah budaya hidup rukun yang harus kita jaga.'
+                }
+            ];
+
+            npcData.forEach(data => {
+                const npc = createCharacter(data.color, data.emoji);
+                npc.position.set(data.position.x, 0, data.position.z);
+                npc.userData = {
+                    id: data.id,
+                    name: data.name,
+                    dialog: data.dialog,
+                    type: 'npc',
+                    emoji: data.emoji,
+                    baseY: 0
+                };
+
+                // Add name tag (sprite)
+                const canvas = document.createElement('canvas');
+                canvas.width = 256;
+                canvas.height = 64;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.roundRect(0, 0, 256, 64, 16);
+                ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 28px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(data.name, 128, 32);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false });
+                const sprite = new THREE.Sprite(spriteMat);
+                sprite.scale.set(2.5, 0.6, 1);
+                sprite.position.y = 3.2;
+                npc.add(sprite);
+
+                scene.add(npc);
+                npcs.push(npc);
+                interactables.push(npc);
+            });
+        }
+
+        // ============================================
+        // CHARACTER CREATION
+        // ============================================
+        function createCharacter(color, emoji) {
+            const group = new THREE.Group();
+
+            // Body
+            const bodyGeo = new THREE.CapsuleGeometry(0.4, 0.6, 4, 8);
+            const bodyMat = new THREE.MeshLambertMaterial({ color: color });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 1.2;
+            body.castShadow = true;
+            group.add(body);
+
+            // Head
+            const headGeo = new THREE.SphereGeometry(0.45, 12, 10);
+            const headMat = new THREE.MeshLambertMaterial({ color: 0xFFCCBC });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 2.2;
+            head.castShadow = true;
+            group.add(head);
+
+            // Eyes
+            const eyeGeo = new THREE.SphereGeometry(0.08, 8, 6);
+            const eyeMat = new THREE.MeshLambertMaterial({ color: 0x000000 });
+            const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+            eyeL.position.set(-0.15, 2.3, 0.4);
+            group.add(eyeL);
+            const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+            eyeR.position.set(0.15, 2.3, 0.4);
+            group.add(eyeR);
+
+            // Smile
+            const smileGeo = new THREE.TorusGeometry(0.12, 0.03, 6, 12, Math.PI);
+            const smileMat = new THREE.MeshLambertMaterial({ color: 0x000000 });
+            const smile = new THREE.Mesh(smileGeo, smileMat);
+            smile.position.set(0, 2.1, 0.42);
+            smile.rotation.x = Math.PI;
+            group.add(smile);
+
+            // Arms
+            const armGeo = new THREE.CapsuleGeometry(0.12, 0.5, 4, 6);
+            const armMat = new THREE.MeshLambertMaterial({ color: color });
+            const armL = new THREE.Mesh(armGeo, armMat);
+            armL.position.set(-0.55, 1.3, 0);
+            armL.rotation.z = 0.3;
+            armL.castShadow = true;
+            group.add(armL);
+            const armR = new THREE.Mesh(armGeo, armMat);
+            armR.position.set(0.55, 1.3, 0);
+            armR.rotation.z = -0.3;
+            armR.castShadow = true;
+            group.add(armR);
+
+            // Legs
+            const legGeo = new THREE.CapsuleGeometry(0.15, 0.5, 4, 6);
+            const legMat = new THREE.MeshLambertMaterial({ color: 0x3E2723 });
+            const legL = new THREE.Mesh(legGeo, legMat);
+            legL.position.set(-0.2, 0.4, 0);
+            legL.castShadow = true;
+            group.add(legL);
+            const legR = new THREE.Mesh(legGeo, legMat);
+            legR.position.set(0.2, 0.4, 0);
+            legR.castShadow = true;
+            group.add(legR);
+
+            return group;
+        }
+
+        // ============================================
+        // PLAYER
+        // ============================================
+        function createPlayer() {
+            playerGroup = createCharacter(0xFF5722, '🧑');
+
+            // Add a little hat to distinguish player
+            const hatGeo = new THREE.ConeGeometry(0.5, 0.4, 8);
+            const hatMat = new THREE.MeshLambertMaterial({ color: 0x1A237E });
+            const hat = new THREE.Mesh(hatGeo, hatMat);
+            hat.position.y = 2.8;
+            hat.castShadow = true;
+            playerGroup.add(hat);
+
+            // Point light on player
+            const playerLight = new THREE.PointLight(0xFFFFFF, 0.5, 5);
+            playerLight.position.set(0, 3, 0);
+            playerGroup.add(playerLight);
+
+            playerGroup.position.set(0, 0, 3);
+            playerGroup.userData = { type: 'player' };
+            scene.add(playerGroup);
+            player = playerGroup;
+        }
+
+        // ============================================
+        // UPDATE UI
+        // ============================================
+        function updateUI() {
+            document.getElementById('scoreDisplay').textContent = GameState.score;
+
+            const quest = GameState.getCurrentQuest();
+            if (quest) {
+                document.getElementById('questDisplay').textContent = `🎯 ${quest.title}`;
+            } else {
+                document.getElementById('questDisplay').textContent = '🏆 Semua misi selesai!';
+            }
+        }
+
+        // ============================================
+        // NOTIFICATION
+        // ============================================
+        let notifTimeout;
+        function showNotification(msg, type = 'success') {
+            const notif = document.getElementById('notification');
+            notif.textContent = msg;
+            notif.className = 'notification show' + (type === 'warning' ? ' warning' : '');
+            clearTimeout(notifTimeout);
+            notifTimeout = setTimeout(() => {
+                notif.classList.remove('show');
+            }, 2500);
+        }
+
+        // ============================================
+        // MODAL
+        // ============================================
+        function showModal(icon, title, text, callback) {
+            document.getElementById('modalIcon').textContent = icon;
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalText').textContent = text;
+            document.getElementById('modal').classList.add('active');
+
+            const btn = document.getElementById('modalBtn');
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            newBtn.addEventListener('click', () => {
+                document.getElementById('modal').classList.remove('active');
+                if (callback) callback();
+            });
+        }
+
+        // ============================================
+        // INTERACTION
+        // ============================================
+        function findNearestInteractable() {
+            let nearest = null;
+            let minDist = 3.5;
+
+            interactables.forEach(obj => {
+                const dist = player.position.distanceTo(obj.position);
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearest = obj;
+                }
+            });
+
+            return nearest;
+        }
+
+        function interact() {
+            const target = findNearestInteractable();
+            if (!target) {
+                showNotification('Tidak ada yang bisa diajak berinteraksi', 'warning');
+                return;
+            }
+
+            const data = target.userData;
+            const quest = GameState.getCurrentQuest();
+
+            if (quest && quest.target === data.id) {
+                // Complete current quest
+                const completed = GameState.completeQuest(quest.id, quest.reward);
+
+                if (completed) {
+                    showModal(
+                        quest.icon,
+                        `✅ ${quest.title}`,
+                        data.dialog + `\n\n+${quest.reward} Poin!`,
+                        () => {
+                            updateUI();
+                            showNotification(`+${quest.reward} poin! ⭐`);
+
+                            // Check if all done
+                            if (GameState.isAllComplete()) {
+                                setTimeout(() => {
+                                    showModal(
+                                        '🏆',
+                                        'Selamat!',
+                                        `Kamu telah menyelesaikan semua misi hidup rukun!\n\nTotal poin: ${GameState.score}\n\nKamu adalah Pahlawan Rukun sejati! 🌟`,
+                                        null
+                                    );
+                                }, 1500);
+                            }
+                        }
+                    );
+                }
+            } else if (quest) {
+                showModal(
+                    '💬',
+                    data.name,
+                    data.dialog + `\n\n(Tugas saat ini: ${quest.title} - ${quest.hint})`,
+                    null
+                );
+            } else {
+                showModal('💬', data.name, data.dialog, null);
+            }
+        }
+
+        // ============================================
+        // EVENTS
+        // ============================================
+        function setupEvents() {
+            // Keyboard
+            window.addEventListener('keydown', (e) => {
+                const key = e.key.toLowerCase();
+                if (key === 'w' || key === 'arrowup') keys.w = true;
+                if (key === 's' || key === 'arrowdown') keys.s = true;
+                if (key === 'a' || key === 'arrowleft') keys.a = true;
+                if (key === 'd' || key === 'arrowright') keys.d = true;
+                if (key === ' ' || key === 'e') { e.preventDefault(); interact(); }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                const key = e.key.toLowerCase();
+                if (key === 'w' || key === 'arrowup') keys.w = false;
+                if (key === 's' || key === 'arrowdown') keys.s = false;
+                if (key === 'a' || key === 'arrowleft') keys.a = false;
+                if (key === 'd' || key === 'arrowright') keys.d = false;
+            });
+
+            // Joystick
+            const joyContainer = document.getElementById('joystickContainer');
+            const joyStick = document.getElementById('joystickStick');
+            const joyBase = joyContainer.querySelector('.joystick-base');
+
+            function startJoystick(e) {
+                e.preventDefault();
+                const touch = e.touches ? e.touches[0] : e;
+                const rect = joyBase.getBoundingClientRect();
+                joystick.active = true;
+                joystick.originX = rect.left + rect.width / 2;
+                joystick.originY = rect.top + rect.height / 2;
+                moveJoystick(touch.clientX, touch.clientY, rect);
+            }
+
+            function moveJoystick(x, y, rect) {
+                if (!joystick.active) return;
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                let dx = x - centerX;
+                let dy = y - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const maxDist = rect.width / 2 - 15;
+
+                if (dist > maxDist) {
+                    dx = (dx / dist) * maxDist;
+                    dy = (dy / dist) * maxDist;
+                }
+
+                joyStick.style.transform = `translate(${dx}px, ${dy}px)`;
+                joystick.x = dx / maxDist;
+                joystick.y = dy / maxDist;
+            }
+
+            function endJoystick() {
+                joystick.active = false;
+                joystick.x = 0;
+                joystick.y = 0;
+                joyStick.style.transform = 'translate(0px, 0px)';
+            }
+
+            joyBase.addEventListener('touchstart', startJoystick, { passive: false });
+            joyBase.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const rect = joyBase.getBoundingClientRect();
+                moveJoystick(touch.clientX, touch.clientY, rect);
+            }, { passive: false });
+            joyBase.addEventListener('touchend', endJoystick);
+            joyBase.addEventListener('touchcancel', endJoystick);
+
+            // Mouse fallback for joystick
+            joyBase.addEventListener('mousedown', (e) => {
+                startJoystick(e);
+                const rect = joyBase.getBoundingClientRect();
+                const onMove = (ev) => moveJoystick(ev.clientX, ev.clientY, rect);
+                const onUp = () => {
+                    endJoystick();
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onUp);
+                };
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+            });
+
+            // Buttons
+            document.getElementById('interactBtn').addEventListener('click', interact);
+            document.getElementById('helpBtn').addEventListener('click', () => {
+                const quest = GameState.getCurrentQuest();
+                if (quest) {
+                    showModal('❓', 'Petunjuk', quest.hint, null);
+                } else {
+                    showModal('🏆', 'Semua Selesai!', 'Kamu sudah menyelesaikan semua misi. Kumpulkan poin dengan membantu warga!', null);
+                }
+            });
+
+            // Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // ============================================
+        // PLAYER MOVEMENT
+        // ============================================
+        function updatePlayer(dt) {
+            if (!player) return;
+
+            let moveX = 0;
+            let moveZ = 0;
+
+            // Keyboard
+            if (keys.w) moveZ -= 1;
+            if (keys.s) moveZ += 1;
+            if (keys.a) moveX -= 1;
+            if (keys.d) moveX += 1;
+
+            // Joystick
+            if (joystick.active) {
+                moveX += joystick.x;
+                moveZ += joystick.y;
+            }
+
+            // Normalize
+            const length = Math.sqrt(moveX * moveX + moveZ * moveZ);
+            if (length > 0) {
+                moveX /= length;
+                moveZ /= length;
+
+                // Move
+                const newX = player.position.x + moveX * playerSpeed * dt;
+                const newZ = player.position.z + moveZ * playerSpeed * dt;
+
+                // Boundary check
+                const bound = 35;
+                player.position.x = Math.max(-bound, Math.min(bound, newX));
+                player.position.z = Math.max(-bound, Math.min(bound, newZ));
+
+                // Rotate player to face movement direction
+                const angle = Math.atan2(moveX, moveZ);
+                player.rotation.y = angle;
+
+                // Bob animation
+                player.position.y = Math.abs(Math.sin(Date.now() * 0.01)) * 0.1;
+            } else {
+                player.position.y = 0;
+            }
+
+            // Update nearest interactable indicator
+            const nearest = findNearestInteractable();
+            if (nearest !== nearestInteractable) {
+                nearestInteractable = nearest;
+                // Highlight effect
+                interactables.forEach(obj => {
+                    if (obj === nearest) {
+                        obj.scale.setScalar(1.1);
+                    } else {
+                        obj.scale.setScalar(1);
+                    }
+                });
+            }
+        }
+
+        // ============================================
+        // CAMERA FOLLOW
+        // ============================================
+        function updateCamera(dt) {
+            if (!player) return;
+
+            const targetPos = new THREE.Vector3(
+                player.position.x + cameraOffset.x,
+                player.position.y + cameraOffset.y,
+                player.position.z + cameraOffset.z
+            );
+
+            camera.position.lerp(targetPos, 0.1);
+
+            cameraLookAt.set(
+                player.position.x,
+                player.position.y + 1,
+                player.position.z
+            );
+            camera.lookAt(cameraLookAt);
+        }
+
+        // ============================================
+        // NPC IDLE ANIMATION
+        // ============================================
+        function animateNPCs(time) {
+            npcs.forEach((npc, i) => {
+                npc.position.y = Math.sin(time * 0.002 + i) * 0.05;
+                npc.rotation.y += 0.005;
+            });
+        }
+
+        // ============================================
+        // ANIMATION LOOP
+        // ============================================
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dt = Math.min(clock.getDelta(), 0.1);
+            const time = performance.now();
+
+            updatePlayer(dt);
+            updateCamera(dt);
+            animateNPCs(time);
+
+            renderer.render(scene, camera);
+        }
+
+        // ============================================
+        // START GAME
+        // ============================================
+        document.getElementById('startBtn').addEventListener('click', () => {
+            document.getElementById('introScreen').style.display = 'none';
+            document.getElementById('game-container').style.display = 'block';
+            init();
+
+            // Show first quest notification
+            setTimeout(() => {
+                const quest = GameState.getCurrentQuest();
+                if (quest) {
+                    showNotification(`🎯 Misi: ${quest.title}`);
+                } else {
+                    showNotification('🏆 Semua misi selesai!');
+                }
+            }, 1000);
+        });
+
+        // ============================================
+        // ROUND RECT POLYFILL
+        // ============================================
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+                if (w < 2 * r) r = w / 2;
+                if (h < 2 * r) r = h / 2;
+                this.beginPath();
+                this.moveTo(x + r, y);
+                this.arcTo(x + w, y, x + w, y + h, r);
+                this.arcTo(x + w, y + h, x, y + h, r);
+                this.arcTo(x, y + h, x, y, r);
+                this.arcTo(x, y, x + w, y, r);
+                this.closePath();
+                return this;
+            };
+        }
+
+    </script>
+</body>
+</html>
